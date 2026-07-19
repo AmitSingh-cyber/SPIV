@@ -1,0 +1,26 @@
+# Dependency directories
+node_modules/
+server/node_modules/
+client/node_modules/
+
+# Local databases
+*.sqlite
+server/database.sqlite
+
+# User uploads
+server/uploads/*
+!server/uploads/.gitkeep
+
+# Environment variables
+.env
+server/.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+client/dist/
+
+# OS files
+.DS_Store
+Thumbs.db
