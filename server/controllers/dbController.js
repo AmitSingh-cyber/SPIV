@@ -36,7 +36,11 @@ exports.importDatabase = async (req, res) => {
 
   try {
     // Disable foreign keys temporarily to clear data
-    await runQuery('PRAGMA foreign_keys = OFF');
+    try {
+      await runQuery('PRAGMA foreign_keys = OFF');
+    } catch (e) {
+      // Ignored for cloud databases (Turso does not support PRAGMA statements)
+    }
 
     const tables = [
       'users', 'subjects', 'attendance', 'assignments', 
@@ -69,13 +73,21 @@ exports.importDatabase = async (req, res) => {
     }
 
     // Re-enable foreign keys
-    await runQuery('PRAGMA foreign_keys = ON');
+    try {
+      await runQuery('PRAGMA foreign_keys = ON');
+    } catch (e) {
+      // Ignored
+    }
 
     res.json({ success: true, message: 'Database backup imported and restored successfully.' });
   } catch (error) {
     console.error('Error importing database:', error);
     // Safety re-enable
-    await runQuery('PRAGMA foreign_keys = ON');
+    try {
+      await runQuery('PRAGMA foreign_keys = ON');
+    } catch (e) {
+      // Ignored
+    }
     res.status(500).json({ success: false, message: 'Failed to restore database from backup.' });
   }
 };

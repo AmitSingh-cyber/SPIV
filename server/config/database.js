@@ -3,41 +3,99 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 
-const dbPath = process.env.DATABASE_PATH 
-  ? path.resolve(process.env.DATABASE_PATH)
-  : path.resolve(__dirname, '../database.sqlite');
+let db;
+let client;
+const useTurso = process.env.TURSO_DATABASE_URL ? true : false;
 
-// Ensure parent directory of database exists
-const dbDir = path.dirname(dbPath);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+if (useTurso) {
+  const { createClient } = require('@libsql/client');
+  client = createClient({
+    url: process.env.TURSO_DATABASE_URL,
+    authToken: process.env.TURSO_AUTH_TOKEN
+  });
+  console.log('Using Turso Cloud Database connection.');
+} else {
+  const dbPath = process.env.DATABASE_PATH 
+    ? path.resolve(process.env.DATABASE_PATH)
+    : path.resolve(__dirname, '../database.sqlite');
+
+  // Ensure parent directory of database exists
+  const dbDir = path.dirname(dbPath);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+
+  db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+      console.error('Error connecting to SQLite database:', err.message);
+    } else {
+      console.log('Connected to the SQLite database.');
+    }
+  });
 }
 
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error connecting to SQLite database:', err.message);
-  } else {
-    console.log('Connected to the SQLite database.');
-  }
-});
-
-// Run queries synchronously to ensure correct setup sequence
+// Run queries asynchronously / synchronously based on driver
 const runQuery = (sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function (err) {
-      if (err) reject(err);
-      else resolve(this);
+  if (useTurso) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const res = await client.execute({ sql, args: params });
+        resolve({
+          lastID: res.lastInsertRowid ? Number(res.lastInsertRowid) : null,
+          changes: res.rowsAffected
+        });
+      } catch (err) {
+        reject(err);
+      }
     });
-  });
+  } else {
+    return new Promise((resolve, reject) => {
+      db.run(sql, params, function (err) {
+        if (err) reject(err);
+        else resolve(this);
+      });
+    });
+  }
 };
 
 const getQuery = (sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
+  if (useTurso) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const res = await client.execute({ sql, args: params });
+        resolve(res.rows[0] || null);
+      } catch (err) {
+        reject(err);
+      }
     });
-  });
+  } else {
+    return new Promise((resolve, reject) => {
+      db.get(sql, params, (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+  }
+};
+
+const allQuery = (sql, params = []) => {
+  if (useTurso) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const res = await client.execute({ sql, args: params });
+        resolve(res.rows);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  } else {
+    return new Promise((resolve, reject) => {
+      db.all(sql, params, (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+  }
 };
 
 async function initDatabase() {
@@ -400,12 +458,5 @@ module.exports = {
   initDatabase,
   runQuery,
   getQuery,
-  allQuery: (sql, params = []) => {
-    return new Promise((resolve, reject) => {
-      db.all(sql, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
-  }
+  allQuery
 };
