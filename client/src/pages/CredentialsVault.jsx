@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useAudioEffects } from '../components/ui/AudioFeedback';
 import { GlowCard } from '../components/ui/GlowCard';
