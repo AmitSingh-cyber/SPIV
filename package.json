@@ -5,8 +5,7 @@
   "main": "server/server.js",
   "scripts": {
     "start": "node server/server.js",
-    "build": "cd server && npm install && cd ../client && npm install && npm run build",
-    "postinstall": "cd server && npm install"
+    "build": "npm --prefix server install && npm --prefix client install && npm --prefix client run build"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
