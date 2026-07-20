@@ -77,17 +77,20 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// Serve frontend static build if available & fallback non-API routes to index.html
-const clientBuildPath = path.join(__dirname, '../client/dist');
-if (fs.existsSync(clientBuildPath)) {
-  app.use(express.static(clientBuildPath));
-  app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
-      return next();
-    }
-    res.sendFile(path.join(clientBuildPath, 'index.html'));
-  });
-}
+// Serve frontend static build & fallback non-API routes to index.html
+const clientBuildPath = path.resolve(__dirname, '../client/dist');
+app.use(express.static(clientBuildPath));
+
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+    return next();
+  }
+  const indexPath = path.join(clientBuildPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+  res.status(404).send('ECHO VAULT Server Online. Frontend build index.html not found.');
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
