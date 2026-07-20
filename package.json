@@ -5,7 +5,7 @@
   "main": "server/server.js",
   "scripts": {
     "start": "node server/server.js",
-    "build": "npm --prefix server install && npm --prefix client install && npm --prefix client run build"
+    "build": "npm --prefix server install && npm --prefix client install && (chmod +x client/node_modules/.bin/* 2>/dev/null || true) && npm --prefix client run build"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
