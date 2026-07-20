@@ -12,17 +12,12 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Enable CORS
-const allowedOrigins = [
-  'http://localhost:5173',
-  process.env.FRONTEND_URL
-].filter(Boolean);
-
 app.use(cors({
   origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, or server-to-server)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(new Error('CORS policy blocked access.'), false);
-    }
+    
+    // Always allow localhost, GitHub Pages, Netlify, Vercel, and Render origins
     return callback(null, true);
   },
   credentials: true

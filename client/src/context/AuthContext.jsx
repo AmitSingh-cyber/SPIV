@@ -44,8 +44,19 @@ export const AuthProvider = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-      const data = await res.json();
-      if (data.success) {
+
+      let data;
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        console.error('Non-JSON login response:', text);
+        toast.error('Server returned invalid response. Check server status.');
+        return false;
+      }
+
+      if (res.ok && data.success) {
         localStorage.setItem('echo_token', data.token);
         setToken(data.token);
         setUser(data.user);
@@ -56,7 +67,8 @@ export const AuthProvider = ({ children }) => {
         return false;
       }
     } catch (error) {
-      toast.error('Network error during login.');
+      console.error('Login error:', error);
+      toast.error('Network error. Unable to reach backend server. If hosted on Render free tier, it may take 30s to wake up.');
       return false;
     }
   };
@@ -75,8 +87,19 @@ export const AuthProvider = ({ children }) => {
           semester: parseInt(semester) || 5
         })
       });
-      const data = await res.json();
-      if (data.success) {
+
+      let data;
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        console.error('Non-JSON registration response:', text);
+        toast.error('Server returned invalid response. Check server status.');
+        return false;
+      }
+
+      if (res.ok && data.success) {
         localStorage.setItem('echo_token', data.token);
         setToken(data.token);
         setUser(data.user);
@@ -87,7 +110,8 @@ export const AuthProvider = ({ children }) => {
         return false;
       }
     } catch (error) {
-      toast.error('Network error during registration.');
+      console.error('Registration fetch error:', error);
+      toast.error('Network error. Unable to reach backend server. If hosted on Render free tier, it may take 30s to wake up.');
       return false;
     }
   };
